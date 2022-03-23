@@ -37,30 +37,37 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-				new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
-		SecurityContextHolder.getContext().setAuthentication(authentication);
-		String jwt = jwtUtils.generateJwtToken(authentication);
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = jwtUtils.generateJwtToken(authentication);
 
-		UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
-		return ResponseEntity.ok(new JwtResponse(jwt,
-												 userDetails.getId(),
-												 userDetails.getUsername()));
+            return ResponseEntity.ok(new JwtResponse(jwt,
+                                                     userDetails.getId(),
+                                                     userDetails.getUsername()));
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterUserRequest registerUserRequest) {
-        if (userRepository.existsByUsername(registerUserRequest.getUsername())) {
-			return ResponseEntity
-					.badRequest()
-					.body(new MessageResponse("Error: Username is already taken!"));
-		}
-		// Create new user's account
-		User user = new User(registerUserRequest.getUsername(),
-							 encoder.encode(registerUserRequest.getPassword()));
+        try {
+            if (userRepository.existsByUsername(registerUserRequest.getUsername())) {
+                return ResponseEntity
+                        .badRequest()
+                        .body(new MessageResponse("Error: Username is already taken!"));
+            }
 
-		userRepository.save(user);
-		return new ResponseEntity<>(new MessageResponse("User registered successfully!"), HttpStatus.CREATED);
+            User user = new User(registerUserRequest.getUsername(),
+                                 encoder.encode(registerUserRequest.getPassword()));
+            userRepository.save(user);
+            return new ResponseEntity<>(new MessageResponse("User registered successfully!"), HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
