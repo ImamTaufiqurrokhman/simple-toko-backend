@@ -21,7 +21,7 @@ public class JwtUtils {
 	public String generateJwtToken(Authentication authentication) {
 		UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
 		//    @Value("${itforshort.app.jwtExpirationMs}")
-		int jwtExpirationMs = 3600000;
+		long jwtExpirationMs = 2592000000L; // sebulan
 		return Jwts.builder()
 				.setSubject((userPrincipal.getUsername()))
 				.setIssuedAt(new Date())
