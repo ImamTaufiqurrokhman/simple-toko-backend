@@ -6,45 +6,20 @@ import com.itforshort.toko.repository.BarangRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
-public class BarangController {
+public class BarangController extends Controller{
     private final BarangRepository barangRepository;
 
     public BarangController(BarangRepository barangRepository) {
         this.barangRepository = barangRepository;
-    }
-    
-    private ResponseEntity<Map<String, Object>> getMapResponseEntity(Page<Barang> pageBarang) {
-        List<Barang> barang;
-        barang = pageBarang.getContent();
-        Map<String, Object> response = new HashMap<>();
-        response.put("daftarBarang", barang);
-        response.put("currentPage", pageBarang.getNumber() + 1);
-        response.put("totalItems", pageBarang.getTotalElements());
-        response.put("totalPages", pageBarang.getTotalPages());
-        if (barang.isEmpty())
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-
-    private Sort getSortDirection(String sort_by, String sort_type) {
-        if (sort_type.equals("asc")) {
-            return Sort.by(sort_by).ascending();
-        } else if (sort_type.equals("desc")) {
-            return Sort.by(sort_by).descending();
-        }
-        return Sort.by(sort_by).ascending();
     }
     
     @GetMapping("/barang")
@@ -64,7 +39,7 @@ public class BarangController {
             } else {
                 pageBarang = barangRepository.findByNamaContaining(nama, paging);
             }
-            return getMapResponseEntity(pageBarang);
+            return paginationResponseEntity(pageBarang, sort_by, sort_type);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -82,7 +57,7 @@ public class BarangController {
             Barang _barang = barangRepository.save(new Barang(barang.getNama(), barang.getHarga()));
             return new ResponseEntity<>(_barang, HttpStatus.CREATED);
         } catch (Exception e) {
-            return new ResponseEntity<>(new MessageResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
