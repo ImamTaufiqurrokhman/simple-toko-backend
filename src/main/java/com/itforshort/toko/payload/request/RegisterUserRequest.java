@@ -1,8 +1,11 @@
 package com.itforshort.toko.payload.request;
 
+import com.itforshort.toko.model.Role;
+
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.util.Set;
 
 public class RegisterUserRequest {
     @NotNull
@@ -13,6 +16,7 @@ public class RegisterUserRequest {
     @Size(min = 9, max = 40)
     private String password;
 
+    private Set<String> role;
 
     public String getUsername() {
         return username;
@@ -28,5 +32,13 @@ public class RegisterUserRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public Set<String> getRole() {
+        return role;
+    }
+
+    public void setRole(Set<String> role) {
+        this.role = role;
     }
 }
