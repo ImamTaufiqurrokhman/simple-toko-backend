@@ -1,15 +1,20 @@
 package com.itforshort.toko.controller;
 
+import com.itforshort.toko.exception.TokenRefreshException;
 import com.itforshort.toko.model.ERole;
+import com.itforshort.toko.model.RefreshToken;
 import com.itforshort.toko.model.Role;
 import com.itforshort.toko.model.User;
 import com.itforshort.toko.payload.request.LoginRequest;
+import com.itforshort.toko.payload.request.RefreshTokenRequest;
 import com.itforshort.toko.payload.request.RegisterUserRequest;
 import com.itforshort.toko.payload.response.JwtResponse;
 import com.itforshort.toko.payload.response.MessageResponse;
+import com.itforshort.toko.payload.response.RefreshTokenResponse;
 import com.itforshort.toko.repository.RoleRepository;
 import com.itforshort.toko.repository.UserRepository;
 import com.itforshort.toko.security.jwt.JwtUtils;
+import com.itforshort.toko.security.services.RefreshTokenService;
 import com.itforshort.toko.security.services.UserDetailsImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,13 +41,15 @@ public class AuthController {
     private final PasswordEncoder encoder;
     private final JwtUtils jwtUtils;
     private final RoleRepository roleRepository;
+    private final RefreshTokenService refreshTokenService;
 
-    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository, PasswordEncoder encoder, JwtUtils jwtUtils, RoleRepository roleRepository) {
+    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository, PasswordEncoder encoder, JwtUtils jwtUtils, RoleRepository roleRepository, RefreshTokenService refreshTokenService) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.encoder = encoder;
         this.jwtUtils = jwtUtils;
         this.roleRepository = roleRepository;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @PostMapping("/login")
@@ -57,9 +64,13 @@ public class AuthController {
             List<String> roles = userDetails.getAuthorities().stream()
 				.map(GrantedAuthority::getAuthority)
 				.collect(Collectors.toList());
-            return ResponseEntity.ok(new JwtResponse(jwt,
-                                                     userDetails.getId(),
-                                                     userDetails.getUsername()));
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails);
+            return ResponseEntity.ok(new JwtResponse(
+                    jwt,
+                    refreshToken.getToken(),
+                    userDetails.getId(),
+                    userDetails.getUsername(),
+                    roles));
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -108,5 +119,20 @@ public class AuthController {
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        String requestRefreshToken = request.getRefreshToken();
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String token = jwtUtils.generateJwtTokenFromUsername(user.getUsername());
+                    refreshTokenService.deleteByUserId(user.getId());
+                    RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(UserDetailsImpl.build(user));
+                    return new ResponseEntity<>(new RefreshTokenResponse(token, newRefreshToken.getToken()), HttpStatus.OK);
+                })
+                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Refresh token is invalid"));
     }
 }

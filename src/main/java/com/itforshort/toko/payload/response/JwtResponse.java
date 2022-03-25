@@ -1,15 +1,21 @@
 package com.itforshort.toko.payload.response;
 
-public class JwtResponse {
-    private final String token;
-    private String type = "Bearer";
-    private final Long id;
-    private final String username;
+import java.util.List;
 
-    public JwtResponse(String token, Long id, String username) {
+public class JwtResponse {
+    private String token;
+    private String type = "Bearer";
+    private String refreshToken;
+    private Long id;
+    private String username;
+    private List<String> roles;
+
+    public JwtResponse(String token, String refreshToken, Long id, String username, List<String> roles) {
         this.token = token;
+        this.refreshToken = refreshToken;
         this.id = id;
         this.username = username;
+        this.roles = roles;
     }
 
     public String getToken() {
@@ -30,5 +36,33 @@ public class JwtResponse {
 
     public String getUsername() {
         return username;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public List<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
     }
 }
